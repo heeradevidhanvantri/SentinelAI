@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sentinelai-celery-worker
+  namespace: sentinelai
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: sentinelai-celery-worker
+  template:
+    metadata:
+      labels:
+        app: sentinelai-celery-worker
+    spec:
+      containers:
+        - name: worker
+          image: ghcr.io/sentinelai/api:latest
+          command: ["celery", "-A", "app.workers.celery_app", "worker", "--loglevel=info", "-Q", "default,execution,monitoring"]
+          envFrom:
+            - secretRef:
+                name: sentinelai-secrets
+            - configMapRef:
+                name: sentinelai-config
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: 2000m
+              memory: 2Gi

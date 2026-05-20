@@ -1,0 +1,2 @@
+{"type":"incident","tenant_id":"default","incident_id":"inc-001","title":"High error rate on payment-api","service":"payment-api","severity":"critical","status":"open","triggered_by":"threshold_alert","timestamp":"2026-05-20T14:33:00Z"}
+{"type":"incident","tenant_id":"default","incident_id":"inc-002","title":"Elevated latency on notification-worker","service":"notification-worker","severity":"high","status":"open","triggered_by":"anomaly_detection","timestamp":"2026-05-20T14:36:00Z"}

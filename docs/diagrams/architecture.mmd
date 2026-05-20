@@ -1,0 +1,41 @@
+flowchart TB
+    subgraph UI["Frontend - Next.js 15"]
+        Dashboard[Command Center]
+        Incidents[Incident Manager]
+        Agents[Agent Monitor]
+        Approvals[Approval Queue]
+    end
+
+    subgraph API["Backend - FastAPI"]
+        Gateway[API Gateway]
+        Auth[JWT + RBAC]
+    end
+
+    subgraph AI["LangGraph Agents"]
+        M[Monitoring] --> I[Investigation]
+        I --> D[Decision]
+        D --> E[Execution]
+        E --> R[Reporting]
+    end
+
+    subgraph Data
+        PG[(PostgreSQL)]
+        RD[(Redis)]
+        KC[[Kafka]]
+        PC[(Pinecone)]
+    end
+
+    subgraph Exec["Infrastructure Actions"]
+        K8s[Kubernetes]
+        ECS[AWS ECS]
+    end
+
+    UI --> Gateway
+    Gateway --> Auth
+    Gateway --> AI
+    AI --> PG
+    AI --> PC
+    Gateway --> KC
+    E --> K8s
+    E --> ECS
+    Gateway --> RD

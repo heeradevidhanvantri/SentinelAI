@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: sentinelai
+  labels:
+    app.kubernetes.io/name: sentinelai
+    app.kubernetes.io/part-of: sentinelai-platform
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: sentinelai-staging
+  labels:
+    environment: staging

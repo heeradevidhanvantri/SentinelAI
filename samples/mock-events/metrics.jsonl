@@ -1,0 +1,7 @@
+{"tenant_id":"default","service":"payment-api","metric_name":"error_rate","value":0.2,"timestamp":"2026-05-20T08:00:00Z"}
+{"tenant_id":"default","service":"payment-api","metric_name":"error_rate","value":0.5,"timestamp":"2026-05-20T12:00:00Z"}
+{"tenant_id":"default","service":"payment-api","metric_name":"error_rate","value":3.2,"timestamp":"2026-05-20T14:00:00Z","is_anomaly":true,"threshold_breached":true}
+{"tenant_id":"default","service":"payment-api","metric_name":"latency_p99","value":45,"timestamp":"2026-05-20T08:00:00Z"}
+{"tenant_id":"default","service":"payment-api","metric_name":"latency_p99","value":450,"timestamp":"2026-05-20T14:00:00Z","is_anomaly":true,"threshold_breached":true}
+{"tenant_id":"default","service":"notification-worker","metric_name":"error_rate","value":12.5,"timestamp":"2026-05-20T14:30:00Z","is_anomaly":true}
+{"tenant_id":"default","service":"auth-service","metric_name":"error_rate","value":0.1,"timestamp":"2026-05-20T14:00:00Z"}
