@@ -3,6 +3,7 @@ from app.agents.graph import run_incident_pipeline
 
 
 @pytest.mark.asyncio
+@pytest.mark.slow
 async def test_incident_pipeline():
     result = await run_incident_pipeline(
         incident_id="test-001",

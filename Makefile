@@ -3,9 +3,9 @@
 PYTHON ?= python
 PYTEST ?= pytest
 
-# Default: run unit tests (no integration)
+# Default: run unit tests (no integration, no slow LLM pipeline tests)
 test:
-	$(PYTEST) -m "not integration"
+	$(PYTEST) -m "not integration and not slow"
 
 # Full test suite including integration (requires running stack)
 test-all:

@@ -22,7 +22,7 @@ PROMETHEUS_URL = os.getenv("PROMETHEUS_URL", "http://localhost:9090")
 OTEL_ENDPOINT = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317")
 
 DEMO_EMAIL = os.getenv("SENTINEL_DEMO_EMAIL", "admin@sentinelai.io")
-DEMO_PASSWORD = os.getenv("SENTINEL_DEMO_PASSWORD", "demo")
+DEMO_PASSWORD = os.getenv("SENTINEL_DEMO_PASSWORD", "sentinel123")
 
 DEFAULT_TIMEOUT = float(os.getenv("SENTINEL_HTTP_TIMEOUT", "30"))
 

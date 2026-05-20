@@ -15,7 +15,7 @@ def main():
     # Login
     resp = httpx.post(
         f"{API_URL}/api/v1/auth/login",
-        json={"email": "admin@sentinelai.io", "password": "demo"},
+        json={"email": "admin@sentinelai.io", "password": "sentinel123"},
     )
     token = resp.json().get("access_token", "")
     headers = {"Authorization": f"Bearer {token}"}

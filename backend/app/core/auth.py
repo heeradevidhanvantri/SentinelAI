@@ -2,17 +2,18 @@
 
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import Annotated, Optional
+from typing import Annotated, Optional, Union
 
+import bcrypt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from pydantic import BaseModel
 
 from app.config import get_settings
+from app.core.logging import get_logger
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+logger = get_logger(__name__)
 security = HTTPBearer(auto_error=False)
 
 
@@ -37,27 +38,60 @@ class UserContext(BaseModel):
     role: Role
 
 
-def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+def role_to_str(role: Union[Role, str]) -> str:
+    return role.value if isinstance(role, Role) else str(role)
+
+
+def validate_jwt_config() -> list[str]:
+    """Return list of JWT configuration warnings (empty if OK)."""
+    settings = get_settings()
+    warnings: list[str] = []
+    if not settings.jwt_secret_key or settings.jwt_secret_key.startswith("change-me"):
+        warnings.append("JWT_SECRET_KEY is missing or using default placeholder")
+    if not settings.jwt_algorithm:
+        warnings.append("JWT_ALGORITHM is not configured")
+    if settings.jwt_access_token_expire_minutes <= 0:
+        warnings.append("JWT_ACCESS_TOKEN_EXPIRE_MINUTES must be positive")
+    return warnings
 
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    if not password:
+        raise ValueError("Password must not be empty")
+    hashed = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
+    return hashed.decode("utf-8")
 
 
-def create_access_token(user_id: str, tenant_id: str, role: Role) -> str:
+def verify_password(plain: str, hashed: Optional[str]) -> bool:
+    if not plain or not hashed:
+        return False
+    try:
+        return bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
+    except (ValueError, TypeError, AttributeError) as exc:
+        logger.warning("password_verification_failed", error=str(exc))
+        return False
+
+
+def create_access_token(user_id: str, tenant_id: str, role: Union[Role, str]) -> str:
     settings = get_settings()
+    if not settings.jwt_secret_key:
+        raise RuntimeError("JWT_SECRET_KEY is not configured")
+
     expire = datetime.now(timezone.utc) + timedelta(
         minutes=settings.jwt_access_token_expire_minutes
     )
     payload = {
         "sub": user_id,
         "tenant_id": tenant_id,
-        "role": role.value,
-        "exp": expire,
+        "role": role_to_str(role),
+        "exp": int(expire.timestamp()),
         "type": "access",
     }
-    return jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
+    try:
+        return jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
+    except Exception as exc:
+        logger.exception("jwt_token_creation_failed", user_id=user_id, error=str(exc))
+        raise RuntimeError("Failed to create access token") from exc
 
 
 def decode_token(token: str) -> TokenPayload:

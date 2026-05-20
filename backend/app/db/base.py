@@ -10,10 +10,20 @@ class Base(DeclarativeBase):
     pass
 
 
+def normalize_database_url(url: str) -> str:
+    """Ensure asyncpg driver prefix for SQLAlchemy async engine."""
+    if url.startswith("postgres://"):
+        return url.replace("postgres://", "postgresql+asyncpg://", 1)
+    if url.startswith("postgresql://") and "+asyncpg" not in url and "+psycopg" not in url:
+        return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    return url
+
+
 def get_engine():
     settings = get_settings()
+    database_url = normalize_database_url(settings.database_url)
     return create_async_engine(
-        settings.database_url,
+        database_url,
         pool_size=settings.database_pool_size,
         max_overflow=settings.database_max_overflow,
         echo=settings.app_env == "development",

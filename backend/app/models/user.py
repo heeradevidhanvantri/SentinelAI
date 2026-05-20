@@ -17,7 +17,7 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=False, index=True)
     hashed_password = Column(String(255), nullable=False)
     full_name = Column(String(255), nullable=True)
-    role = Column(SQLEnum(Role), default=Role.VIEWER)
+    role = Column(SQLEnum(Role, native_enum=False, length=32), default=Role.VIEWER)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 

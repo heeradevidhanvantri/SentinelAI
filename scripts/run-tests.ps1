@@ -17,7 +17,7 @@ function Run-Python {
 }
 
 switch ($Command) {
-    "test"           { Run-Python @("-m", "pytest", "-m", "not integration") }
+    "test"           { Run-Python @("-m", "pytest", "-m", "not integration and not slow") }
     "test-all"       { Run-Python @("-m", "pytest") }
     "test-cov"       { Run-Python @("-m", "pytest", "-m", "not integration", "--cov=backend/app", "--cov-report=term-missing") }
     "smoke-test"     { Run-Python @("-m", "pytest", "backend/tests/test_pipeline.py", "backend/tests/test_health.py", "-v") }

@@ -21,7 +21,7 @@ KAFKA_BOOTSTRAP = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
 PROMETHEUS_URL = os.getenv("PROMETHEUS_URL", "http://localhost:9090")
 
 DEMO_EMAIL = "admin@sentinelai.io"
-DEMO_PASSWORD = "demo"
+DEMO_PASSWORD = "sentinel123"
 
 # Skip integration tests when services are unavailable
 INTEGRATION = pytest.mark.integration
