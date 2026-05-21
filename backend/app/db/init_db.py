@@ -33,7 +33,38 @@ async def init_database(db_engine: AsyncEngine | None = None) -> None:
     db_engine = db_engine or engine
     async with db_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    await _ensure_reasoning_trace_foreign_key(db_engine)
     logger.info("database_schema_initialized")
+
+
+async def _ensure_reasoning_trace_foreign_key(db_engine: AsyncEngine) -> None:
+    """Add FK constraint on existing reasoning_traces tables created before the fix."""
+
+    def _needs_fk(connection) -> bool:
+        inspector = inspect(connection)
+        if not inspector.has_table("reasoning_traces"):
+            return False
+        if not inspector.has_table("incidents"):
+            return False
+        for fk in inspector.get_foreign_keys("reasoning_traces"):
+            if fk.get("referred_table") == "incidents":
+                return False
+        return True
+
+    async with db_engine.connect() as conn:
+        needs_fk = await conn.run_sync(_needs_fk)
+        if not needs_fk:
+            return
+        logger.info("adding_reasoning_traces_foreign_key")
+        await conn.execute(
+            text(
+                "ALTER TABLE reasoning_traces "
+                "ADD CONSTRAINT fk_reasoning_traces_incident_id "
+                "FOREIGN KEY (incident_id) REFERENCES incidents(id) ON DELETE CASCADE"
+            )
+        )
+        await conn.commit()
+        logger.info("reasoning_traces_foreign_key_added")
 
 
 async def users_table_exists(db_engine: AsyncEngine | None = None) -> bool:

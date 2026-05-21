@@ -5,7 +5,7 @@ from enum import Enum
 from typing import Optional
 from uuid import uuid4
 
-from sqlalchemy import Column, DateTime, String, Text, JSON, Float, Enum as SQLEnum
+from sqlalchemy import Column, DateTime, String, Text, JSON, Float, ForeignKey, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
@@ -47,7 +47,12 @@ class Incident(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
     resolved_at = Column(DateTime(timezone=True), nullable=True)
 
-    reasoning_traces = relationship("ReasoningTrace", back_populates="incident", lazy="selectin")
+    reasoning_traces = relationship(
+        "ReasoningTrace",
+        back_populates="incident",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
     remediation_actions = relationship("RemediationAction", back_populates="incident", lazy="selectin")
 
 
@@ -55,7 +60,12 @@ class ReasoningTrace(Base):
     __tablename__ = "reasoning_traces"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid4()))
-    incident_id = Column(String(36), nullable=False, index=True)
+    incident_id = Column(
+        String(36),
+        ForeignKey("incidents.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     tenant_id = Column(String(64), nullable=False)
     agent_name = Column(String(64), nullable=False, index=True)
     step = Column(String(128), nullable=False)
@@ -65,4 +75,7 @@ class ReasoningTrace(Base):
     latency_ms = Column(Float, nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
-    incident = relationship("Incident", back_populates="reasoning_traces")
+    incident = relationship(
+        "Incident",
+        back_populates="reasoning_traces",
+    )
