@@ -4,6 +4,7 @@ from app import __version__
 from app.core.auth import hash_password, validate_jwt_config, verify_password
 from app.core.observability import metrics_response
 from app.db.init_db import check_database_connectivity, users_table_exists
+from app.db.url import validate_database_driver
 from app.config import get_settings
 
 router = APIRouter()
@@ -32,15 +33,14 @@ async def auth_health_check():
         bcrypt_error = str(exc)
 
     jwt_configured = len(jwt_warnings) == 0
-    database_url = settings.database_url
-    driver_ok = "+asyncpg" in database_url or database_url.startswith("postgresql+asyncpg")
+    driver_info = validate_database_driver(settings.database_url)
 
     checks = {
         "database_connected": db_connected,
         "users_table_exists": table_exists,
         "jwt_configured": jwt_configured,
         "bcrypt_working": bcrypt_ok,
-        "asyncpg_driver": driver_ok,
+        "asyncpg_driver": driver_info.async_mode,
     }
     all_ok = all(checks.values())
 
@@ -53,8 +53,13 @@ async def auth_health_check():
             "warnings": jwt_warnings,
         },
         "database": {
-            "driver": "asyncpg" if driver_ok else "unknown",
-            "url_scheme": database_url.split("://")[0] if "://" in database_url else "invalid",
+            "driver": driver_info.driver_type,
+            "url_scheme": driver_info.normalized_scheme,
+            "original_scheme": driver_info.original_scheme,
+            "async_mode": driver_info.async_mode,
+            "normalization_applied": driver_info.normalization_applied,
+            "stripped_params": list(driver_info.stripped_params),
+            "ssl_enabled": driver_info.ssl_enabled,
         },
         "bcrypt_error": bcrypt_error,
     }

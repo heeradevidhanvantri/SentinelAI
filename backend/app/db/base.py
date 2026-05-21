@@ -4,30 +4,34 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.orm import DeclarativeBase
 
 from app.config import get_settings
+from app.db.url import normalize_database_url, normalize_database_url_with_connect_args
+
+# Re-export for scripts and backward compatibility
+__all__ = [
+    "Base",
+    "engine",
+    "async_session_factory",
+    "get_db",
+    "get_engine",
+    "normalize_database_url",
+]
 
 
 class Base(DeclarativeBase):
     pass
 
 
-def normalize_database_url(url: str) -> str:
-    """Ensure asyncpg driver prefix for SQLAlchemy async engine."""
-    if url.startswith("postgres://"):
-        return url.replace("postgres://", "postgresql+asyncpg://", 1)
-    if url.startswith("postgresql://") and "+asyncpg" not in url and "+psycopg" not in url:
-        return url.replace("postgresql://", "postgresql+asyncpg://", 1)
-    return url
-
-
 def get_engine():
     settings = get_settings()
-    database_url = normalize_database_url(settings.database_url)
-    return create_async_engine(
-        database_url,
-        pool_size=settings.database_pool_size,
-        max_overflow=settings.database_max_overflow,
-        echo=settings.app_env == "development",
-    )
+    database_url, connect_args = normalize_database_url_with_connect_args(settings.database_url)
+    engine_kwargs = {
+        "pool_size": settings.database_pool_size,
+        "max_overflow": settings.database_max_overflow,
+        "echo": settings.app_env == "development",
+    }
+    if connect_args:
+        engine_kwargs["connect_args"] = connect_args
+    return create_async_engine(database_url, **engine_kwargs)
 
 
 engine = get_engine()

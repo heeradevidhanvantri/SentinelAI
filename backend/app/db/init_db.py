@@ -23,8 +23,8 @@ DEMO_USER_PASSWORD = "sentinel123"
 
 
 def normalize_database_url(url: str) -> str:
-    """Re-export for scripts; canonical implementation lives in app.db.base."""
-    from app.db.base import normalize_database_url as _normalize
+    """Re-export for scripts; canonical implementation lives in app.db.url."""
+    from app.db.url import normalize_database_url as _normalize
     return _normalize(url)
 
 

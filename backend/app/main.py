@@ -16,6 +16,7 @@ from app.core.logging import setup_logging, get_logger
 from app.core.observability import setup_telemetry, REQUEST_LATENCY
 from app.api.v1 import api_router
 from app.db.init_db import ensure_demo_user, init_database
+from app.db.url import log_database_config
 from app.services.kafka_producer import KafkaEventProducer
 
 setup_logging()
@@ -42,6 +43,8 @@ async def lifespan(app: FastAPI):
     jwt_warnings = validate_jwt_config()
     for warning in jwt_warnings:
         logger.warning("jwt_config_warning", detail=warning)
+
+    log_database_config(settings.database_url)
 
     try:
         await init_database()

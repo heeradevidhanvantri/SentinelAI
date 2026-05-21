@@ -67,6 +67,11 @@ class Settings(BaseSettings):
     tenant_isolation_enabled: bool = True
 
     @property
+    def normalized_database_url(self) -> str:
+        from app.db.url import normalize_database_url
+        return normalize_database_url(self.database_url)
+
+    @property
     def cors_origins_list(self) -> List[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
