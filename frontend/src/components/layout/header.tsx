@@ -1,8 +1,11 @@
 "use client";
 
-import { Bell, Search, User } from "lucide-react";
+import { Bell, Search, User, LogOut } from "lucide-react";
+import { useAuth } from "@/contexts/auth-context";
 
 export function Header({ title, subtitle }: { title: string; subtitle?: string }) {
+  const { logout } = useAuth();
+
   return (
     <header className="flex h-16 items-center justify-between border-b border-border/50 px-8">
       <div>
@@ -22,9 +25,14 @@ export function Header({ title, subtitle }: { title: string; subtitle?: string }
           <Bell className="h-5 w-5" />
           <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-sentinel-red" />
         </button>
-        <button className="flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 hover:bg-secondary">
+        <button
+          onClick={logout}
+          className="flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 hover:bg-secondary"
+          title="Sign out"
+        >
           <User className="h-4 w-4" />
           <span className="text-sm">Admin</span>
+          <LogOut className="h-3.5 w-3.5 text-muted-foreground" />
         </button>
       </div>
     </header>
