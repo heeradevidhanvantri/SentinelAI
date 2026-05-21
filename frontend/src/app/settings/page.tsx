@@ -13,7 +13,7 @@ export default function SettingsPage() {
               <label className="text-sm text-muted-foreground">API URL</label>
               <input
                 className="mt-1 w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm"
-                defaultValue={process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}
+                defaultValue={process.env.NEXT_PUBLIC_API_URL || "https://sentinelai-lee4.onrender.com"}
                 readOnly
               />
             </div>

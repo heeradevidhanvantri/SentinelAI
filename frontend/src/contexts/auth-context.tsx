@@ -54,10 +54,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setError(null);
       try {
         const response = await apiLogin(email, password);
+
+        if (!response.access_token) {
+          throw new Error("Login response did not include access_token");
+        }
+
         setToken(response.access_token);
         setTokenState(response.access_token);
+        console.info("[auth] token stored", {
+          expires_in: response.expires_in,
+          token_type: response.token_type,
+        });
         router.push("/");
       } catch (err) {
+        console.error("[auth] login failed in context", err);
         const message =
           err instanceof Error ? err.message : "Login failed. Please try again.";
         setError(message);
