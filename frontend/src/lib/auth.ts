@@ -17,7 +17,3 @@ export function removeToken(): void {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(LEGACY_TOKEN_KEY);
 }
-
-export function isAuthenticated(): boolean {
-  return !!getToken();
-}

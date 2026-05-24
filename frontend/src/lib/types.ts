@@ -4,6 +4,14 @@ export interface TokenResponse {
   expires_in: number;
 }
 
+export interface AuthUser {
+  id: string;
+  email: string;
+  full_name: string | null;
+  tenant_id: string;
+  role: string;
+}
+
 export interface Incident {
   id: string;
   tenant_id: string;

@@ -1,52 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import { Zap, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Zap, AlertCircle } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { ApiError } from "@/lib/api";
-import { getBackendUrl } from "@/lib/api-config";
-
-function formatLoginError(err: unknown): string {
-  if (err instanceof ApiError) {
-    if (err.status === 0) {
-      return err.detail || "Cannot reach the authentication service. Verify API deployment settings.";
-    }
-    if (err.status === 401) {
-      return err.detail || "Invalid email or password.";
-    }
-    if (err.status >= 500) {
-      return err.detail || "Authentication service is temporarily unavailable.";
-    }
-    return err.detail || err.message;
-  }
-  if (err instanceof Error) {
-    return err.message;
-  }
-  return "Sign in failed. Please try again.";
-}
 
 export default function LoginPage() {
   const { login, error, clearError, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("admin@sentinelai.io");
   const [password, setPassword] = useState("sentinel123");
   const [submitting, setSubmitting] = useState(false);
-  const [localError, setLocalError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
-    setLocalError(null);
-    setSuccess(false);
     clearError();
 
     try {
       await login(email, password);
-      setSuccess(true);
-    } catch (err) {
-      console.error("[auth] login page error", err);
-      setLocalError(formatLoginError(err));
+    } catch {
+      // error state lives in auth context
     } finally {
       setSubmitting(false);
     }
@@ -59,8 +32,6 @@ export default function LoginPage() {
       </div>
     );
   }
-
-  const displayError = localError || error;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-6">
@@ -108,17 +79,10 @@ export default function LoginPage() {
             />
           </div>
 
-          {success && (
-            <div className="flex items-start gap-2 rounded-lg border border-green-500/30 bg-green-500/10 p-3 text-sm text-green-400">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>Sign in successful. Redirecting to dashboard...</span>
-            </div>
-          )}
-
-          {displayError && (
+          {error && (
             <div className="flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-400">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>{displayError}</span>
+              <span>{error}</span>
             </div>
           )}
 
@@ -130,10 +94,6 @@ export default function LoginPage() {
             {submitting ? "Signing in..." : "Sign in"}
           </button>
         </form>
-
-        <p className="mt-6 text-center text-xs text-muted-foreground">
-          Backend: {getBackendUrl()}
-        </p>
       </div>
     </div>
   );

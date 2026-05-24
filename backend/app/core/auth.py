@@ -1,5 +1,3 @@
-"""JWT authentication and RBAC."""
-
 from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import Annotated, Optional, Union
@@ -11,9 +9,7 @@ from jose import JWTError, jwt
 from pydantic import BaseModel
 
 from app.config import get_settings
-from app.core.logging import get_logger
 
-logger = get_logger(__name__)
 security = HTTPBearer(auto_error=False)
 
 
@@ -38,12 +34,7 @@ class UserContext(BaseModel):
     role: Role
 
 
-def role_to_str(role: Union[Role, str]) -> str:
-    return role.value if isinstance(role, Role) else str(role)
-
-
 def validate_jwt_config() -> list[str]:
-    """Return list of JWT configuration warnings (empty if OK)."""
     settings = get_settings()
     warnings: list[str] = []
     if not settings.jwt_secret_key or settings.jwt_secret_key.startswith("change-me"):
@@ -67,8 +58,7 @@ def verify_password(plain: str, hashed: Optional[str]) -> bool:
         return False
     try:
         return bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
-    except (ValueError, TypeError, AttributeError) as exc:
-        logger.warning("password_verification_failed", error=str(exc))
+    except (ValueError, TypeError, AttributeError):
         return False
 
 
@@ -80,18 +70,15 @@ def create_access_token(user_id: str, tenant_id: str, role: Union[Role, str]) ->
     expire = datetime.now(timezone.utc) + timedelta(
         minutes=settings.jwt_access_token_expire_minutes
     )
+    role_value = role.value if isinstance(role, Role) else str(role)
     payload = {
         "sub": user_id,
         "tenant_id": tenant_id,
-        "role": role_to_str(role),
+        "role": role_value,
         "exp": int(expire.timestamp()),
         "type": "access",
     }
-    try:
-        return jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
-    except Exception as exc:
-        logger.exception("jwt_token_creation_failed", user_id=user_id, error=str(exc))
-        raise RuntimeError("Failed to create access token") from exc
+    return jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
 
 
 def decode_token(token: str) -> TokenPayload:

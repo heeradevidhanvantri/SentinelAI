@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -21,104 +21,32 @@ logger = get_logger(__name__)
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(data: LoginRequest, request: Request, db: AsyncSession = Depends(get_db)):
-    request_id = getattr(request.state, "request_id", None)
+async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
     settings = get_settings()
 
-    logger.info(
-        "auth_login_attempt",
-        email=data.email,
-        request_id=request_id,
-    )
-
-    user: User | None = None
     try:
         result = await db.execute(select(User).where(User.email == data.email))
         user = result.scalar_one_or_none()
     except SQLAlchemyError as exc:
-        logger.exception(
-            "auth_login_db_error",
-            email=data.email,
-            request_id=request_id,
-            error=str(exc),
-        )
-        raise HTTPException(status_code=503, detail="Authentication service temporarily unavailable") from exc
+        logger.exception("login_db_error", email=data.email)
+        raise HTTPException(
+            status_code=503,
+            detail="Authentication service temporarily unavailable",
+        ) from exc
 
-    # Dev/demo fallback when users table is empty (no row found, not a DB error)
+    # Dev fallback when the users table hasn't been seeded yet
     if not user and data.email == "admin@sentinelai.io" and settings.app_env == "development":
-        logger.warning(
-            "auth_demo_fallback_login",
-            email=data.email,
-            request_id=request_id,
-        )
-        try:
-            token = create_access_token("demo-admin", settings.default_tenant_id, Role.ADMIN)
-            return TokenResponse(access_token=token, expires_in=1800)
-        except Exception as exc:
-            logger.exception(
-                "auth_demo_token_error",
-                email=data.email,
-                request_id=request_id,
-                error=str(exc),
-            )
-            raise HTTPException(status_code=500, detail="Failed to generate token") from exc
+        logger.warning("demo_fallback_login", email=data.email)
+        token = create_access_token("demo-admin", settings.default_tenant_id, Role.ADMIN)
+        return TokenResponse(access_token=token, expires_in=1800)
 
-    if not user:
-        logger.warning(
-            "auth_login_user_not_found",
-            email=data.email,
-            request_id=request_id,
-        )
+    if not user or not user.is_active:
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    if not user.is_active:
-        logger.warning(
-            "auth_login_inactive_user",
-            email=data.email,
-            user_id=user.id,
-            request_id=request_id,
-        )
+    if not verify_password(data.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    try:
-        password_valid = verify_password(data.password, user.hashed_password)
-    except Exception as exc:
-        logger.exception(
-            "auth_login_password_error",
-            email=data.email,
-            user_id=user.id,
-            request_id=request_id,
-            error=str(exc),
-        )
-        raise HTTPException(status_code=500, detail="Authentication processing error") from exc
-
-    if not password_valid:
-        logger.warning(
-            "auth_login_invalid_password",
-            email=data.email,
-            user_id=user.id,
-            request_id=request_id,
-        )
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-
-    try:
-        token = create_access_token(user.id, user.tenant_id, user.role)
-    except Exception as exc:
-        logger.exception(
-            "auth_login_jwt_error",
-            email=data.email,
-            user_id=user.id,
-            request_id=request_id,
-            error=str(exc),
-        )
-        raise HTTPException(status_code=500, detail="Failed to generate token") from exc
-
-    logger.info(
-        "auth_login_success",
-        email=data.email,
-        user_id=user.id,
-        request_id=request_id,
-    )
+    token = create_access_token(user.id, user.tenant_id, user.role)
     return TokenResponse(
         access_token=token,
         expires_in=settings.jwt_access_token_expire_minutes * 60,
@@ -126,7 +54,22 @@ async def login(data: LoginRequest, request: Request, db: AsyncSession = Depends
 
 
 @router.get("/me", response_model=UserResponse)
-async def get_me(user: UserContext = Depends(get_current_user)):
+async def get_me(
+    user: UserContext = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(User).where(User.id == user.user_id))
+    db_user = result.scalar_one_or_none()
+
+    if db_user:
+        return UserResponse(
+            id=db_user.id,
+            email=db_user.email,
+            full_name=db_user.full_name,
+            tenant_id=db_user.tenant_id,
+            role=db_user.role,
+        )
+
     return UserResponse(
         id=user.user_id,
         email=user.email,

@@ -1,45 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { Bot, AlertCircle } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { api, ApiError } from "@/lib/api";
+import { api } from "@/lib/api";
+import { useApiLoad } from "@/lib/use-api-load";
 import type { AgentFeedItem } from "@/lib/types";
 
 export function AgentFeed() {
-  const [feed, setFeed] = useState<AgentFeedItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await api.getAgentActivity(20);
-        if (!cancelled) setFeed(data.feed);
-      } catch (err) {
-        if (!cancelled) {
-          const message =
-            err instanceof ApiError
-              ? err.detail || err.message
-              : "Failed to load agent activity";
-          setError(message);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const load = useMemo(() => () => api.getAgentActivity(20).then((r) => r.feed), []);
+  const { data: feed, loading, error } = useApiLoad<AgentFeedItem[]>(
+    load,
+    "Failed to load agent activity"
+  );
 
   return (
     <Card>
@@ -59,7 +34,7 @@ export function AgentFeed() {
           </div>
         )}
 
-        {!loading && !error && feed.length === 0 && (
+        {!loading && !error && feed?.length === 0 && (
           <p className="py-6 text-center text-sm text-muted-foreground">
             No agent activity yet.
           </p>
@@ -67,7 +42,7 @@ export function AgentFeed() {
 
         {!loading &&
           !error &&
-          feed.map((item) => (
+          feed?.map((item) => (
             <div
               key={item.id}
               className="rounded-lg border border-border/50 bg-secondary/30 p-3"

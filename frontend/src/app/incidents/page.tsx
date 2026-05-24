@@ -1,47 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import { AlertCircle } from "lucide-react";
 import { Header } from "@/components/layout/header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { api, ApiError } from "@/lib/api";
+import { api } from "@/lib/api";
+import { useApiLoad } from "@/lib/use-api-load";
 import type { Incident } from "@/lib/types";
 
 export default function IncidentsPage() {
-  const [incidents, setIncidents] = useState<Incident[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await api.getIncidents(1, 50);
-        if (!cancelled) setIncidents(data.items);
-      } catch (err) {
-        if (!cancelled) {
-          const message =
-            err instanceof ApiError
-              ? err.detail || err.message
-              : "Failed to load incidents";
-          setError(message);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const load = useMemo(() => () => api.getIncidents(1, 50).then((r) => r.items), []);
+  const { data: incidents, loading, error } = useApiLoad<Incident[]>(
+    load,
+    "Failed to load incidents"
+  );
 
   return (
     <>
@@ -60,13 +35,13 @@ export default function IncidentsPage() {
           </div>
         )}
 
-        {!loading && !error && incidents.length === 0 && (
+        {!loading && !error && incidents?.length === 0 && (
           <p className="py-16 text-center text-muted-foreground">
             No incidents found. Generate incidents via the API or demo scripts.
           </p>
         )}
 
-        {!loading && !error && incidents.length > 0 && (
+        {!loading && !error && incidents && incidents.length > 0 && (
           <div className="space-y-4">
             {incidents.map((inc) => (
               <Link key={inc.id} href={`/incidents/${inc.id}`}>

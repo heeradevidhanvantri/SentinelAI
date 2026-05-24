@@ -1,5 +1,6 @@
 import { Header } from "@/components/layout/header";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { getBackendUrl } from "@/lib/api-config";
 
 export default function SettingsPage() {
   return (
@@ -13,7 +14,7 @@ export default function SettingsPage() {
               <label className="text-sm text-muted-foreground">API URL</label>
               <input
                 className="mt-1 w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm"
-                defaultValue={process.env.NEXT_PUBLIC_API_URL || "https://sentinelai-lee4.onrender.com"}
+                defaultValue={process.env.NEXT_PUBLIC_API_URL || getBackendUrl()}
                 readOnly
               />
             </div>
